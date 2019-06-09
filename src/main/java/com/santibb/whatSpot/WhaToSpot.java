@@ -10,10 +10,14 @@ import com.wrapper.spotify.SpotifyHttpManager;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import com.wrapper.spotify.model_objects.special.SnapshotResult;
+import com.wrapper.spotify.model_objects.specification.Paging;
+import com.wrapper.spotify.model_objects.specification.Playlist;
+import com.wrapper.spotify.model_objects.specification.PlaylistTrack;
 import com.wrapper.spotify.requests.authorization.authorization_code.AuthorizationCodeRefreshRequest;
 import com.wrapper.spotify.requests.authorization.authorization_code.AuthorizationCodeRequest;
 import com.wrapper.spotify.requests.authorization.authorization_code.AuthorizationCodeUriRequest;
 import com.wrapper.spotify.requests.data.playlists.AddTracksToPlaylistRequest;
+import com.wrapper.spotify.requests.data.playlists.GetPlaylistRequest;
 
 import java.net.URI;
 import java.net.URL;
@@ -21,8 +25,8 @@ import java.net.URL;
 
 public class WhaToSpot{
     private static String[][] array;
-    private static String playlistId = "";
-    private static String filename = "";
+    private static String playlistId = null;
+    private static String filename = null;
     private static String clientId = "98e0866a660c429b8dcced3f3028b02d";
     private static String clientSec = "d1808d9bc36b49b4bc9cb5ae4c51bfee";
     public static void main(String[] args) throws Exception{
@@ -33,12 +37,12 @@ public class WhaToSpot{
         		playlistId = args[3];
         	}			
 		}
-        if (filename != "" && playlistId != "") {			
+        if (filename != null && playlistId != null) {			
         	start();
 		}
         else{
             System.out.println("Specify an input name in config or with options:");
-            System.out.println("-input (whatsappconv.txt) -playlistId (spotifyURI)");
+            System.out.println("-input (WhatsAppConv.txt) -playlist (spotifyPlaylistURI)");
         }
     }
     private static boolean validConfig() {
@@ -75,24 +79,30 @@ public class WhaToSpot{
             }
         }
         input.close();
-        array = new String[(list.size()/50)+1][];
-        for (int i = 0; !list.isEmpty(); i++) {
-        	if (i == array.length-1) {
-        		array[i] = new String[list.size()];	
-        		System.out.println("Created a "+list.size()+" length");
-			} else {
-				array[i] = new String[50];	
-				System.out.println("Created a maximum length, i is "+i);
-			}
-        	for (int j = 0; j <array[i].length && !list.isEmpty(); j++) {
-        		array[i][j] = list.remove();
-			}
-        }
-        printArray(array);
-        //Remove duplicates!
-        if (array.length>0) addSongs();
-        else System.out.print("No songs were found in the chat!");
-        
+        // Check if the elements are already in playlist
+        QueueStrLinked original = manageSongs(false);
+        list.intersect(original);
+        System.out.println("Songs managed! Found "+list.size()+" new songs.");
+        if (!list.isEmpty()) {
+        	array = new String[(list.size()/50)+1][];
+        	for (int i = 0; !list.isEmpty(); i++) {
+        		if (i == array.length-1) {
+        			array[i] = new String[list.size()];	
+        			System.out.println("Created a "+list.size()+" length");
+        		} else {
+        			array[i] = new String[50];	
+        			System.out.println("Created a maximum length, i is "+i);
+        		}
+        		for (int j = 0; j <array[i].length && !list.isEmpty(); j++) {
+        			array[i][j] = list.remove();
+        		}
+        	}
+        	printArray(array);
+        	manageSongs(true);
+        }			
+        else {
+        	System.out.print("No new songs were found in the chat! Nothing added to playlist");
+        }	
     }
     private static boolean isValid(String link) {
 		try {
@@ -124,8 +134,10 @@ public class WhaToSpot{
 
     /**
      * Spotify module for adding songs
+     * if the value of @addsongs is true, then modify playlist, 
+     * if false just return songs array
      */
-    private static void addSongs() {
+    private static QueueStrLinked manageSongs(boolean addSongs) {
     	URI redirectUri = SpotifyHttpManager.makeUri("http://localhost:8888/");
     	String[] tokens = getAccessRefresh();
 //    	String accessToken = tokens[0];
@@ -169,24 +181,28 @@ public class WhaToSpot{
             	System.out.println("Saved Refresh Key: " + authorizationCodeCredentials.getRefreshToken());
             	saveRefresh(authorizationCodeCredentials.getAccessToken(), authorizationCodeCredentials.getRefreshToken());
             }
-
+            
             System.out.println("Expires in: " + authorizationCodeCredentials.getExpiresIn());
 	        } catch ( SpotifyWebApiException e) {
 	    		System.out.println("Error: " + e.getMessage());
 	    		if (e.getMessage().equals("Invalid refresh token")) {
 					saveRefresh("","");
-					addSongs();
+					manageSongs(addSongs);
 				}
 	    	} catch ( IOException io) {
 	    		System.out.println("Error: " + io.getMessage());
 	    	}
-    	
-    	for (int i = 0; i < array.length; i++) {
-    		AddTracksToPlaylistRequest addTracksToPlaylistRequest = spotifyApi
-    				.addTracksToPlaylist(playlistId, array[i])
-    				.build();
-    		addTracksToPlaylist_Sync(addTracksToPlaylistRequest);
-    		System.out.println("Added Array "+(i+1));    		
+    	if (addSongs) {			
+    		for (int i = 0; i < array.length; i++) {
+    			AddTracksToPlaylistRequest addTracksToPlaylistRequest = spotifyApi
+    					.addTracksToPlaylist(playlistId, array[i])
+    					.build();
+    			addTracksToPlaylist_Sync(addTracksToPlaylistRequest);
+    			System.out.println("Added Array "+(i+1));    		
+    		}
+    		return null;
+		} else {
+			return getTracksInPlaylist(spotifyApi);
 		}
     }
     private static void addTracksToPlaylist_Sync(AddTracksToPlaylistRequest a) {
@@ -200,7 +216,29 @@ public class WhaToSpot{
     		System.out.println("Error: " + io.getMessage());
     	}
     }
-
+    private static QueueStrLinked getTracksInPlaylist(SpotifyApi spotifyApi) {
+    	QueueStrLinked songs = new QueueStrLinked();
+    	GetPlaylistRequest getPlaylistRequest = spotifyApi
+    		  .getPlaylist(playlistId)
+              .build();
+    	try {
+//	  		Paging<PlaylistTrack> playlistTrackPaging = getPlaylistsTracksRequest.execute();
+	  		Playlist playlist = getPlaylistRequest.execute();
+	  		PlaylistTrack[] tracks = playlist.getTracks().getItems();
+	  		System.out.println("Playlist "+ playlist.getName() +" contains a total of: " + tracks.length +" songs");
+	  		for (int i = 0; i < tracks.length; i++) {
+	  			songs.add(tracks[i].getTrack().getUri());
+//	  			System.out.println("Playlist song " + i + " is " + songs.first());
+	  		}
+      	} catch (IOException e) {
+      		System.out.println("Error: " + e.getMessage());
+      	} catch (SpotifyWebApiException e) {
+      		System.out.println("Error: " + e.getMessage());
+      	} catch (Exception e) {
+      		System.out.println("Error: " + e.getMessage());
+		}
+    	return songs;
+    }
     private static void saveRefresh(String access, String ref) {
     	saveConfigs.saveConfig(filename, playlistId, clientId, clientSec, access, ref);
 	}

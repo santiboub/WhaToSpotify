@@ -1,0 +1,4 @@
+Whatsapp file: conversation.txt
+Playlist id to add: 09FQMYeOKyHUam8x6kxU75
+Client ID: 98e0866a660c429b8dcced3f3028b02d
+Client Secret: d1808d9bc36b49b4bc9cb5ae4c51bfee
