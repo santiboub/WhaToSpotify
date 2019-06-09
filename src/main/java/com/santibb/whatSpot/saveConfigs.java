@@ -27,7 +27,7 @@ public class saveConfigs {
 			e.printStackTrace();
 		}
 		pw.println("Whatsapp file: "+inputf);
-		pw.println("PLaylist id to add: "+playlistId);
+		pw.println("Playlist id to add: "+playlistId);
 		pw.println("Client ID: "+clientId);
 		pw.println("Client Secret: "+clientSec);
 		pw.println("Client Access: "+clientAcc);

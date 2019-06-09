@@ -4,7 +4,7 @@
 
   <groupId>com.santibb</groupId>
   <artifactId>whatSpot</artifactId>
-  <version>0.5.0-Alpha</version>
+  <version>0.5.1-ALPHA</version>
   <packaging>jar</packaging>
 
   <name>whatSpot</name>

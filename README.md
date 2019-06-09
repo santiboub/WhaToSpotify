@@ -1,6 +1,8 @@
-# WhaToSpotify
+# WhatSpotify
 
 A Java application to convert a Whatsapp chat to a curated spotify playlist with all songs sended over the chat to your most loved ones.
+
+For using this application you have to create a new spotify public or private playlist and copy it's URI.
 
 ## Install
 
@@ -31,9 +33,25 @@ The file will be generated at first call when providing the method with the inli
 
 ## Obtain Chats
 
-For obtaining the WhatsApp chat you must go to the app and on profile of current chat click on Export > Export without attached files.
+For obtaining the WhatsApp chat you must go to the app and on profile of current chat click on `Export > Export without attached files`.
 
 You'll need to send the compressed file to your computer and locate it in the same folder as the application.
+
+## Obtain Playlist URI
+
+For obtaining the URI of the playlist, which is an alphanumeric string of 22 characters, you need to obtain it's sharing link and copy the URI of this one, which correspond to the part after `/playlist/`
+
+If the Adress is:
+
+```text
+https://open.spotify.com/playlist/09FQMYeOKyHUam8x6kxU75
+```
+
+The URI will be
+
+```text
+Playlist id to add: 09FQMYeOKyHUam8x6kxU75
+```
 
 ## Building from Source
 
