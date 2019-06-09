@@ -70,40 +70,4 @@ public class QueueStrLinked
         }
         return (n != null);
 	}
-	public String dequeue(String x) {
-        NodeStr prev = null;
-        NodeStr curr = first;
-        while (curr != null) {
-            if (curr.getData() == x){
-                if (prev == null) {
-                    first = curr.getNext();
-                    size--;
-                    return x;
-                }else if (curr.getNext()==null) {
-                    prev.setNext(null);
-                    last = prev;
-                    size--;
-                    return x;
-                }else{
-                    prev.setNext(curr.getNext());
-                    curr.setNext(null);
-                    size--;
-                    return x;
-                }
-            } else{
-                prev = curr;
-                curr = curr.getNext();
-            }
-        }
-        return null;
-    }
-	public void intersect(QueueStrLinked orig) {
-		NodeStr curr = first;
-		while (curr != null){
-			if (orig.contains(curr.getData())) {				
-				dequeue(curr.getData());
-			}
-			curr = curr.getNext();
-		}
-	}
 }
